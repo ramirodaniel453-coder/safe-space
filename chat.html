@@ -1,0 +1,292 @@
+const express = require('express');
+const { OpenAI } = require('openai');
+const { body, validationResult } = require('express-validator');
+const logger = require('../utils/logger');
+const safetyFilter = require('../utils/safetyFilter');
+const shengHelper = require('../utils/shengHelper');
+const responseHandler = require('../utils/responseHandler');
+
+const router = express.Router();
+
+// Initialize OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000, // 30 seconds timeout
+  maxRetries: 2
+});
+
+// Validation middleware
+const validateChatRequest = [
+  body('message')
+    .trim()
+    .notEmpty().withMessage('Message is required')
+    .isLength({ max: 1000 }).withMessage('Message must be less than 1000 characters')
+    .escape(),
+  body('mood')
+    .optional()
+    .isIn(['happy', 'calm', 'neutral', 'anxious', 'sad', 'overwhelmed'])
+    .withMessage('Invalid mood value'),
+  body('language')
+    .optional()
+    .isIn(['en', 'sheng', 'sw', 'es', 'fr', 'de', 'zh', 'hi'])
+    .withMessage('Invalid language code'),
+  body('context')
+    .optional()
+    .isArray()
+    .withMessage('Context must be an array'),
+  body('userId')
+    .optional()
+    .isString()
+    .withMessage('User ID must be a string')
+];
+
+// Main chat endpoint
+router.post('/', validateChatRequest, async (req, res) => {
+  try {
+    // Validate request
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return responseHandler.error(res, 400, 'Validation failed', errors.array());
+    }
+
+    const { message, mood = 'neutral', language = 'en', context = [], userId } = req.body;
+
+    // Check for harmful content
+    if (safetyFilter.containsHarmfulContent(message)) {
+      logger.warn('Harmful content detected', {
+        userId,
+        message: message.substring(0, 50),
+        language
+      });
+
+      const emergencyResponse = shengHelper.getEmergencyResponse(language);
+      return responseHandler.success(res, {
+        response: emergencyResponse,
+        emergency: true,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Prepare conversation history
+    const conversationHistory = context.slice(-10); // Last 10 messages
+
+    // Build system prompt based on language and mood
+    const systemPrompt = buildSystemPrompt(language, mood, userId);
+
+    // Prepare messages for OpenAI
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
+      { role: 'user', content: message }
+    ];
+
+    // Log request for monitoring
+    logger.info('Chat request', {
+      userId,
+      mood,
+      language,
+      messageLength: message.length,
+      hasHistory: conversationHistory.length > 0
+    });
+
+    // Call OpenAI
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+      messages,
+      max_tokens: parseInt(process.env.OPENAI_MAX_TOKENS) || 500,
+      temperature: parseFloat(process.env.OPENAI_TEMPERATURE) || 0.7,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.5,
+    });
+
+    const aiResponse = completion.choices[0].message.content;
+
+    // Post-process response based on language
+    const processedResponse = shengHelper.processResponse(aiResponse, language);
+
+    // Log successful response
+    logger.info('Chat response', {
+      userId,
+      responseLength: processedResponse.length,
+      language,
+      mood
+    });
+
+    // Return response
+    responseHandler.success(res, {
+      response: processedResponse,
+      mood,
+      language,
+      timestamp: new Date().toISOString(),
+      conversationId: generateConversationId()
+    });
+
+  } catch (error) {
+    logger.error('Chat error', {
+      error: error.message,
+      stack: error.stack,
+      userId: req.body.userId
+    });
+
+    if (error.response) {
+      // OpenAI API error
+      return responseHandler.error(res, 502, 'AI service unavailable', {
+        code: error.code,
+        type: error.type
+      });
+    } else if (error.request) {
+      // Network error
+      return responseHandler.error(res, 503, 'Network error, please try again');
+    } else {
+      // Other errors
+      return responseHandler.error(res, 500, 'Internal server error');
+    }
+  }
+});
+
+// Batch chat endpoint (for future features)
+router.post('/batch', async (req, res) => {
+  try {
+    const { messages, userId } = req.body;
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return responseHandler.error(res, 400, 'Messages array is required');
+    }
+
+    // Process each message
+    const responses = [];
+    for (const msg of messages) {
+      if (safetyFilter.containsHarmfulContent(msg.content)) {
+        responses.push({
+          response: shengHelper.getEmergencyResponse(msg.language || 'en'),
+          emergency: true
+        });
+      } else {
+        // Simplified response for batch processing
+        responses.push({
+          response: `I received your message about "${msg.content.substring(0, 50)}...". Let's talk about this.`,
+          language: msg.language || 'en'
+        });
+      }
+    }
+
+    responseHandler.success(res, {
+      responses,
+      count: responses.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    logger.error('Batch chat error', error);
+    responseHandler.error(res, 500, 'Batch processing failed');
+  }
+});
+
+// Chat history endpoint
+router.get('/history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 50, offset = 0 } = req.query;
+
+    // In a real app, this would fetch from database
+    // For now, return mock data or empty
+    responseHandler.success(res, {
+      history: [],
+      userId,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      total: 0
+    });
+
+  } catch (error) {
+    logger.error('History fetch error', error);
+    responseHandler.error(res, 500, 'Failed to fetch history');
+  }
+});
+
+// Conversation summary endpoint
+router.post('/summary', async (req, res) => {
+  try {
+    const { conversation } = req.body;
+
+    if (!Array.isArray(conversation) || conversation.length === 0) {
+      return responseHandler.error(res, 400, 'Conversation array is required');
+    }
+
+    // Generate a summary of the conversation
+    const summaryPrompt = `Summarize this conversation in 3 bullet points:\n\n${conversation.map(msg => `${msg.sender}: ${msg.content}`).join('\n')}`;
+
+    const completion = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: summaryPrompt }],
+      max_tokens: 200,
+      temperature: 0.5,
+    });
+
+    const summary = completion.choices[0].message.content;
+
+    responseHandler.success(res, {
+      summary,
+      conversationLength: conversation.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    logger.error('Summary generation error', error);
+    responseHandler.error(res, 500, 'Failed to generate summary');
+  }
+});
+
+// Helper functions
+function buildSystemPrompt(language, mood, userId) {
+  const basePrompt = `You are SafeSpace AI, a compassionate mental wellness companion.
+
+CRITICAL SAFETY RULES:
+1. NEVER give medical advice or diagnoses
+2. NEVER encourage harmful behaviors
+3. ALWAYS suggest professional help for serious concerns
+4. ALWAYS prioritize user safety
+5. NEVER pretend to be a human therapist
+6. Maintain strict confidentiality
+
+RESPONSE GUIDELINES:
+- Keep responses conversational and under 150 words
+- Use warm, compassionate tone
+- Ask open-ended questions to encourage sharing
+- Validate feelings without judgment
+- Focus on the present moment
+- Suggest simple grounding techniques when appropriate`;
+
+  // Language-specific prompts
+  const languagePrompts = {
+    en: "Respond in warm, conversational English. Be supportive and empathetic.",
+    sheng: shengHelper.getShengPrompt(),
+    sw: "Jibu kwa Kiswahili cha kawaida. Kuwa mwenye huruma na usikilizaji.",
+    es: "Responde en español cálido y conversacional. Sé solidario y empático.",
+    fr: "Répondez en français chaleureux et conversationnel. Soyez solidaire et empathique.",
+    de: "Antworten Sie in warmem, umgangssprachlichem Deutsch. Seien Sie unterstützend und einfühlsam.",
+    zh: "请用温暖、对话式的中文回复。要支持性和 empathetic。",
+    hi: "गर्मजोशी से, बातचीत की हिंदी में जवाब दें। सहायक और सहानुभूतिपूर्ण बनें।"
+  };
+
+  // Mood-specific prompts
+  const moodPrompts = {
+    happy: "The user is feeling happy. Celebrate with them and encourage positive reflection.",
+    calm: "The user is feeling calm. Help them maintain this peaceful state with gentle mindfulness.",
+    neutral: "The user is feeling neutral. Help them explore their current state without pressure.",
+    anxious: "The user is feeling anxious. Provide gentle grounding techniques and reassurance.",
+    sad: "The user is feeling sad. Offer compassionate listening and gentle comfort.",
+    overwhelmed: "The user is feeling overwhelmed. Help them break things down into manageable steps."
+  };
+
+  return `${basePrompt}\n\n${languagePrompts[language] || languagePrompts.en}\n\n${moodPrompts[mood] || moodPrompts.neutral}`;
+}
+
+function generateConversationId() {
+  return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+module.exports = router;

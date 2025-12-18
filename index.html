@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safe Space - Mental Wellness Companion</title>
+    <meta name="description" content="A safe, judgment-free environment for mental wellness with Sheng language support">
+    <meta name="keywords" content="mental health, wellness, sheng, kenya, ai chat, support">
+    <meta name="author" content="Safe Space Team">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Safe Space - Mental Wellness Companion">
+    <meta property="og:description" content="A safe, judgment-free environment for mental wellness with Sheng language support">
+    <meta property="og:image" content="/assets/og-image.png">
+    <meta property="og:url" content="https://safespace.com">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Safe Space - Mental Wellness Companion">
+    <meta name="twitter:description" content="A safe, judgment-free environment for mental wellness with Sheng language support">
+    <meta name="twitter:image" content="/assets/twitter-image.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/6.6.6/css/flag-icons.min.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6C63FF">
+    
+    <!-- Preconnect to CDNs -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- Loading indicator -->
+    <div id="loading" class="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading Safe Space...</p>
+    </div>
+
+    <div class="container" style="display: none;">
+        <!-- Header with Navigation -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-heart-circle"></i>
+                <h1>Safe Space</h1>
+            </div>
+            <div class="header-right">
+                <div class="theme-options">
+                    <button id="sheng-mode" class="theme-btn">
+                        <span class="fi fi-ke"></span>
+                        Sheng Mode
+                    </button>
+                </div>
+                <nav>
+                    <a href="/" class="active">Home</a>
+                    <a href="/chat.html">Chat & Journal</a>
+                    <a href="#resources">Resources</a>
+                    <a href="#about">About</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h2 id="welcome-title">Welcome to Your Safe Space</h2>
+                    <p id="welcome-subtitle">A gentle, judgment-free environment for mental wellness. Track your mood, express yourself, and find support.</p>
+                    <a href="/chat.html" class="btn-primary">
+                        <i class="fas fa-comment-dots"></i> <span id="start-chat-btn">Start Chatting</span>
+                    </a>
+                </div>
+                <div class="hero-image">
+                    <div class="floating-elements">
+                        <div class="floating-element heart"><i class="fas fa-heart"></i></div>
+                        <div class="floating-element leaf"><i class="fas fa-leaf"></i></div>
+                        <div class="floating-element flag"><span class="fi fi-ke"></span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mood Tracker -->
+            <section class="mood-tracker">
+                <h2 id="mood-title">How are you feeling today?</h2>
+                <p id="mood-subtitle">Select your current mood to personalize your experience</p>
+                <div class="mood-options">
+                    <button class="mood-btn" data-mood="happy">
+                        <i class="fas fa-laugh-beam"></i>
+                        <span id="mood-happy">Happy</span>
+                    </button>
+                    <button class="mood-btn" data-mood="calm">
+                        <i class="fas fa-smile"></i>
+                        <span id="mood-calm">Calm</span>
+                    </button>
+                    <button class="mood-btn" data-mood="neutral">
+                        <i class="fas fa-meh"></i>
+                        <span id="mood-neutral">Neutral</span>
+                    </button>
+                    <button class="mood-btn" data-mood="anxious">
+                        <i class="fas fa-flushed"></i>
+                        <span id="mood-anxious">Anxious</span>
+                    </button>
+                    <button class="mood-btn" data-mood="sad">
+                        <i class="fas fa-sad-tear"></i>
+                        <span id="mood-sad">Sad</span>
+                    </button>
+                    <button class="mood-btn" data-mood="overwhelmed">
+                        <i class="fas fa-tired"></i>
+                        <span id="mood-overwhelmed">Overwhelmed</span>
+                    </button>
+                </div>
+                <div id="mood-feedback" class="mood-feedback"></div>
+            </section>
+
+            <!-- Language Preference -->
+            <section class="language-section">
+                <h2 id="language-title">Choose Your Comfort Language</h2>
+                <div class="language-options">
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="sheng">Sheng 🇰🇪</option>
+                        <option value="sw">Kiswahili</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="zh">中文</option>
+                        <option value="hi">हिन्दी</option>
+                    </select>
+                    <button id="apply-language" class="btn-secondary">
+                        <i class="fas fa-language"></i> <span id="apply-lang-btn">Apply Language</span>
+                    </button>
+                </div>
+                <p class="language-note" id="language-note">The AI will respond in your chosen language for a more comfortable experience.</p>
+            </section>
+
+            <!-- Quick Access -->
+            <section class="quick-access">
+                <h2 id="quick-access-title">Quick Access</h2>
+                <div class="access-cards">
+                    <a href="/chat.html" class="access-card">
+                        <div class="card-icon chat">
+                            <i class="fas fa-comment-medical"></i>
+                        </div>
+                        <h3 id="card-chat-title">Chat Companion</h3>
+                        <p id="card-chat-desc">Talk to our supportive AI companion about anything on your mind</p>
+                    </a>
+                    <a href="/chat.html#journal" class="access-card">
+                        <div class="card-icon journal">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h3 id="card-journal-title">Daily Journal</h3>
+                        <p id="card-journal-desc">Private space for your thoughts, feelings, and reflections</p>
+                    </a>
+                    <div class="access-card crisis-card" id="crisis-resources">
+                        <div class="card-icon crisis">
+                            <i class="fas fa-hands-helping"></i>
+                        </div>
+                        <h3 id="card-crisis-title">Crisis Support</h3>
+                        <p id="card-crisis-desc">Immediate resources and helplines (available 24/7)</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Crisis Modal -->
+            <div id="crisis-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal">&times;</span>
+                    <h2><i class="fas fa-hands-helping"></i> <span id="crisis-modal-title">Crisis Support Resources</span></h2>
+                    <div class="crisis-resources">
+                        <div class="crisis-item">
+                            <h3 id="crisis-item1-title">National Suicide Prevention Lifeline</h3>
+                            <p id="crisis-item1-desc">Call: <strong>988</strong> (US & Canada) or <strong>116</strong> (Kenya)</p>
+                            <p id="crisis-item1-note">Available 24/7, free and confidential</p>
+                        </div>
+                        <div class="crisis-item">
+                            <h3 id="crisis-item2-title">Crisis Text Line</h3>
+                            <p id="crisis-item2-desc">Text <strong>HOME</strong> to <strong>741741</strong></p>
+                            <p id="crisis-item2-note">Free, 24/7 crisis counseling via text</p>
+                        </div>
+                        <div class="crisis-item">
+                            <h3 id="crisis-item3-title">Kenya Mental Health Support</h3>
+                            <p id="crisis-item3-desc">Call: <strong>0800 723 825</strong> (Toll-free)</p>
+                            <p id="crisis-item3-note">Free mental health support in Kenya</p>
+                        </div>
+                        <div class="crisis-item">
+                            <h3 id="crisis-item4-title">Emergency Services</h3>
+                            <p id="crisis-item4-desc">Call <strong>911</strong> (US) or <strong>999/112</strong> (Kenya) for immediate help</p>
+                        </div>
+                    </div>
+                    <p class="crisis-note" id="crisis-modal-note">You are not alone. Help is available, and recovery is possible.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-heart-circle"></i>
+                    <span id="footer-logo-text">Safe Space</span>
+                </div>
+                <p class="disclaimer">
+                    <i class="fas fa-info-circle"></i> <span id="disclaimer-text">This tool provides supportive conversation and is not a replacement for professional medical advice, diagnosis, or treatment.</span>
+                </p>
+                <div class="footer-links">
+                    <a href="#privacy" id="footer-privacy">Privacy Policy</a>
+                    <a href="#terms" id="footer-terms">Terms of Use</a>
+                    <a href="#contact" id="footer-contact">Contact</a>
+                </div>
+                <p class="copyright" id="footer-copyright">© 2024 Safe Space. All rights reserved.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(registration => {
+                    console.log('ServiceWorker registration successful');
+                }).catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+
+    <!-- JavaScript -->
+    <script src="/script.js"></script>
+    
+    <!-- Loading script -->
+    <script>
+        // Hide loading spinner and show content
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.querySelector('.container').style.display = 'block';
+            }, 500);
+        });
+    </script>
+</body>
+</html>
